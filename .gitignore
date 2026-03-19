@@ -1,0 +1,6 @@
+.DS_Store
+*.profraw
+
+# Xcode user-specific files
+**/xcuserdata/
+**/*.xcuserstate
