@@ -320,9 +320,12 @@ struct OpenClawCLIRunner {
     }
 
     private func printUsage() {
+        let variants = ClawVariantRegistry.all.map(\.displayName).joined(separator: ", ")
         let usage = """
         用法:
           remove-openclaw --cli [选项]
+
+        覆盖变体 (\(ClawVariantRegistry.all.count) 个): \(variants)
 
         选项:
           --scan                     扫描待清理项（默认行为）
@@ -335,7 +338,7 @@ struct OpenClawCLIRunner {
           --uninstall                执行卸载（移入废纸篓）
           --confirm, --yes           与 --uninstall 搭配，确认执行真实卸载
           --dry-run, -n              预演卸载，不执行任何删除动作
-          --no-terminate-processes   卸载前不自动退出 OpenClaw 进程
+          --no-terminate-processes   卸载前不自动退出相关进程
           --help, -h                 显示帮助
         """
         print(usage)
@@ -406,7 +409,7 @@ struct OpenClawCLIRunner {
         let totalBytes = targets.reduce(Int64(0)) { $0 + max($1.size, 0) }
         print("Dry Run 预演结果:")
         if terminateRunningProcesses {
-            print("- 将尝试退出正在运行的 OpenClaw 进程")
+            print("- 将尝试退出正在运行的 Claw 系列进程并卸载 LaunchAgent")
         } else {
             print("- 不会尝试退出进程（已关闭自动退出）")
         }
