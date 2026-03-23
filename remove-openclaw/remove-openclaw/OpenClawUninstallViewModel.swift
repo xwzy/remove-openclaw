@@ -1,5 +1,4 @@
 import Foundation
-import Combine
 
 @MainActor
 final class OpenClawUninstallViewModel: ObservableObject {
@@ -32,13 +31,29 @@ final class OpenClawUninstallViewModel: ObservableObject {
     }
 
     var targets: [OpenClawCleanupTarget] {
-        variantResults.flatMap { $0.targets }
+        var seen: Set<String> = []
+        var result: [OpenClawCleanupTarget] = []
+        for r in variantResults {
+            for target in r.targets {
+                if seen.insert(target.path).inserted {
+                    result.append(target)
+                }
+            }
+        }
+        return result
     }
 
     var selectedTargets: [OpenClawCleanupTarget] {
-        variantResults
-            .filter { selectedVariantIDs.contains($0.variant.id) }
-            .flatMap { $0.targets }
+        var seen: Set<String> = []
+        var result: [OpenClawCleanupTarget] = []
+        for r in variantResults where selectedVariantIDs.contains(r.variant.id) {
+            for target in r.targets {
+                if seen.insert(target.path).inserted {
+                    result.append(target)
+                }
+            }
+        }
+        return result
     }
 
     var selectedResults: [ClawVariantScanResult] {
@@ -102,9 +117,8 @@ final class OpenClawUninstallViewModel: ObservableObject {
             self.lastScannedAt = Date()
             self.isScanning = false
 
-            for r in results where r.isDetected {
-                self.selectedVariantIDs.insert(r.id)
-            }
+            let detectedIDs = Set(results.filter { $0.isDetected }.map { $0.id })
+            self.selectedVariantIDs = detectedIDs
         }
     }
 

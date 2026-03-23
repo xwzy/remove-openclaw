@@ -98,8 +98,7 @@ struct OpenClawUninstallService {
             let url = URL(fileURLWithPath: path)
             var isDirectory: ObjCBool = false
             guard FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory) else { return nil }
-            let homeDir = FileManager.default.homeDirectoryForCurrentUser.path
-            guard !isDangerousCleanupPath(path, homePath: homeDir) else { return nil }
+            guard !isDangerousCleanupPath(path, homePath: home) else { return nil }
             let size = estimateCleanupTargetSize(at: url, isDirectory: isDirectory.boolValue)
             return OpenClawCleanupTarget(path: path, size: size, isDirectory: isDirectory.boolValue)
         }
@@ -164,49 +163,13 @@ struct OpenClawUninstallService {
         unloadAllClawLaunchAgents()
 
         let incomingTargets = preferredTargets ?? scanOpenClawTargets()
-        let uniqueTargetPaths = collapseDescendantCleanupPaths(incomingTargets.map(\.path))
-
-        guard !uniqueTargetPaths.isEmpty else {
-            return OpenClawCleanupResult(
-                movedToTrashCount: 0, failedCount: 0, movedToTrashSize: 0,
-                failedPaths: [],
-                terminatedProcessCount: totalTerminated,
-                forceTerminatedProcessCount: totalForceTerminated,
-                failedProcessNames: allFailedProcessNames
-            )
-        }
-
-        var movedToTrashCount = 0
-        var failedCount = 0
-        var movedToTrashSize: Int64 = 0
-        var failedPaths: [String] = []
-
-        for path in uniqueTargetPaths {
-            let url = URL(fileURLWithPath: path)
-            var isDirectory: ObjCBool = false
-            guard FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory) else {
-                continue
-            }
-
-            let home = FileManager.default.homeDirectoryForCurrentUser.path
-            guard !isDangerousCleanupPath(path, homePath: home) else { continue }
-
-            let size = estimateCleanupTargetSize(at: url, isDirectory: isDirectory.boolValue)
-            let success = await recycleItem(at: url)
-            if success {
-                movedToTrashCount += 1
-                movedToTrashSize += size
-            } else {
-                failedCount += 1
-                if failedPaths.count < 5 { failedPaths.append(path) }
-            }
-        }
+        let fileResult = await recycleTargets(incomingTargets)
 
         return OpenClawCleanupResult(
-            movedToTrashCount: movedToTrashCount,
-            failedCount: failedCount,
-            movedToTrashSize: movedToTrashSize,
-            failedPaths: failedPaths,
+            movedToTrashCount: fileResult.movedToTrashCount,
+            failedCount: fileResult.failedCount,
+            movedToTrashSize: fileResult.movedToTrashSize,
+            failedPaths: fileResult.failedPaths,
             terminatedProcessCount: totalTerminated,
             forceTerminatedProcessCount: totalForceTerminated,
             failedProcessNames: allFailedProcessNames
@@ -217,11 +180,6 @@ struct OpenClawUninstallService {
         _ variantResults: [ClawVariantScanResult],
         terminateRunningProcesses: Bool = true
     ) async -> OpenClawCleanupResult {
-        var allTargets: [OpenClawCleanupTarget] = []
-        for r in variantResults {
-            allTargets.append(contentsOf: r.targets)
-        }
-
         var totalTerminated = 0
         var totalForceTerminated = 0
         var allFailedProcessNames: [String] = []
@@ -242,29 +200,43 @@ struct OpenClawUninstallService {
         unloadSpecificLaunchAgents(labels: selectedLabels)
         dynamicUnloadClawLaunchAgents()
 
-        let uniqueTargetPaths = collapseDescendantCleanupPaths(allTargets.map(\.path))
-        guard !uniqueTargetPaths.isEmpty else {
-            return OpenClawCleanupResult(
-                movedToTrashCount: 0, failedCount: 0, movedToTrashSize: 0,
-                failedPaths: [],
-                terminatedProcessCount: totalTerminated,
-                forceTerminatedProcessCount: totalForceTerminated,
-                failedProcessNames: allFailedProcessNames
-            )
+        let allTargets = variantResults.flatMap { $0.targets }
+        let fileResult = await recycleTargets(allTargets)
+
+        return OpenClawCleanupResult(
+            movedToTrashCount: fileResult.movedToTrashCount,
+            failedCount: fileResult.failedCount,
+            movedToTrashSize: fileResult.movedToTrashSize,
+            failedPaths: fileResult.failedPaths,
+            terminatedProcessCount: totalTerminated,
+            forceTerminatedProcessCount: totalForceTerminated,
+            failedProcessNames: allFailedProcessNames
+        )
+    }
+
+    private struct FileCleanupResult {
+        let movedToTrashCount: Int
+        let failedCount: Int
+        let movedToTrashSize: Int64
+        let failedPaths: [String]
+    }
+
+    private func recycleTargets(_ targets: [OpenClawCleanupTarget]) async -> FileCleanupResult {
+        let uniquePaths = collapseDescendantCleanupPaths(targets.map(\.path))
+        guard !uniquePaths.isEmpty else {
+            return FileCleanupResult(movedToTrashCount: 0, failedCount: 0, movedToTrashSize: 0, failedPaths: [])
         }
 
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
         var movedToTrashCount = 0
         var failedCount = 0
         var movedToTrashSize: Int64 = 0
         var failedPaths: [String] = []
 
-        for path in uniqueTargetPaths {
+        for path in uniquePaths {
             let url = URL(fileURLWithPath: path)
             var isDirectory: ObjCBool = false
-            guard FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory) else {
-                continue
-            }
-            let home = FileManager.default.homeDirectoryForCurrentUser.path
+            guard FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory) else { continue }
             guard !isDangerousCleanupPath(path, homePath: home) else { continue }
             let size = estimateCleanupTargetSize(at: url, isDirectory: isDirectory.boolValue)
             let success = await recycleItem(at: url)
@@ -277,14 +249,11 @@ struct OpenClawUninstallService {
             }
         }
 
-        return OpenClawCleanupResult(
+        return FileCleanupResult(
             movedToTrashCount: movedToTrashCount,
             failedCount: failedCount,
             movedToTrashSize: movedToTrashSize,
-            failedPaths: failedPaths,
-            terminatedProcessCount: totalTerminated,
-            forceTerminatedProcessCount: totalForceTerminated,
-            failedProcessNames: allFailedProcessNames
+            failedPaths: failedPaths
         )
     }
 

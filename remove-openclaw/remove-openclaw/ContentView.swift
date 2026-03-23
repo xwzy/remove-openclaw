@@ -187,6 +187,16 @@ struct ContentView: View {
                 Spacer()
                 ProgressView("正在扫描所有变体…")
                 Spacer()
+            } else if viewModel.isUninstalling {
+                Spacer()
+                VStack(spacing: 12) {
+                    ProgressView()
+                        .controlSize(.large)
+                    Text("正在卸载选中的变体…")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
             } else if viewModel.detectedResults.isEmpty {
                 emptyState
             } else {
@@ -240,6 +250,12 @@ struct ContentView: View {
                 Label(exportMessage, systemImage: exportMessage.hasPrefix("导出失败") ? "xmark.circle.fill" : "checkmark.circle.fill")
                     .font(.caption)
                     .foregroundStyle(exportMessage.hasPrefix("导出失败") ? .orange : .green)
+                    .task(id: exportMessage) {
+                        try? await Task.sleep(for: .seconds(4))
+                        if !Task.isCancelled {
+                            self.exportMessage = nil
+                        }
+                    }
             }
         }
         .padding(.horizontal, 16)
