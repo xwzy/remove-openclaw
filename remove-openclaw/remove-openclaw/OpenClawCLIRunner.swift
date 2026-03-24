@@ -207,7 +207,7 @@ struct OpenClawCLIRunner {
             }
 
             if !config.dryRun && !config.confirmUninstall {
-                fputs("错误: 真实卸载需要显式确认，请追加 --confirm（或 --yes）。\n", stderr)
+                fputs("错误: 真实卸载需要显式确认，请追加 --confirm（或 --yes）；建议先用 --list 或 --dry-run 核对目标。\n", stderr)
                 return finish(report: report, config: config, exitCode: 64)
             }
 
@@ -224,6 +224,11 @@ struct OpenClawCLIRunner {
                 )
                 return finish(report: report, config: config, exitCode: 0)
             }
+
+            printRealUninstallWarning(
+                targets: selectedTargets,
+                terminateRunningProcesses: config.terminateRunningProcesses
+            )
 
             let uninstallResult = await service.uninstallOpenClawCompletely(
                 preferredTargets: selectedTargets,
@@ -323,7 +328,7 @@ struct OpenClawCLIRunner {
         let variants = ClawVariantRegistry.all.map(\.displayName).joined(separator: ", ")
         let usage = """
         用法:
-          remove-openclaw --cli [选项]
+          小龙虾粉碎机 --cli [选项]
 
         覆盖变体 (\(ClawVariantRegistry.all.count) 个): \(variants)
 
@@ -335,9 +340,9 @@ struct OpenClawCLIRunner {
           --target-file <path>       从 .txt/.json 清单读取目标（用于 list/export/uninstall）
           --strict-target-file       清单为空时返回错误（需与 --target-file 搭配）
           --fail-on-warnings         导入清单出现告警时直接失败（建议自动化场景使用）
-          --uninstall                执行卸载（移入废纸篓）
-          --confirm, --yes           与 --uninstall 搭配，确认执行真实卸载
-          --dry-run, -n              预演卸载，不执行任何删除动作
+          --uninstall                执行真实卸载（移入废纸篓，建议先 --list 或 --dry-run）
+          --confirm, --yes           与 --uninstall 搭配，确认你已核对目标并允许真实卸载
+          --dry-run, -n              预演卸载，检查影响范围但不执行任何删除动作
           --no-terminate-processes   卸载前不自动退出相关进程
           --help, -h                 显示帮助
         """
@@ -376,6 +381,22 @@ struct OpenClawCLIRunner {
         for warning in warnings {
             print("警告: \(warning)")
         }
+    }
+
+    private func printRealUninstallWarning(
+        targets: [OpenClawCleanupTarget],
+        terminateRunningProcesses: Bool
+    ) {
+        let totalBytes = targets.reduce(Int64(0)) { $0 + max($1.size, 0) }
+        print("警告: 即将执行真实卸载")
+        print("- 本次目标: \(targets.count) 项, \(byteFormatter.string(fromByteCount: totalBytes))")
+        if terminateRunningProcesses {
+            print("- 将尝试退出 Claw 系列相关进程并卸载 LaunchAgent")
+        } else {
+            print("- 已关闭自动退出进程，部分被占用的文件可能删除失败")
+        }
+        print("- 目标会被移入废纸篓，其中可能包含配置、缓存、会话数据或下载资源")
+        print("- 如果你还没核对路径，建议先使用 --list 或 --dry-run")
     }
 
     private func printUninstallSummary(_ result: OpenClawCleanupResult) {

@@ -1,5 +1,27 @@
 import SwiftUI
 
+enum AppTypography {
+    static let sidebarTitle = Font.system(size: 14, weight: .semibold)
+    static let body = Font.system(size: 14, weight: .regular)
+    static let bodyStrong = Font.system(size: 14, weight: .semibold)
+    static let subtitle = Font.system(size: 13, weight: .regular)
+    static let caption = Font.system(size: 12, weight: .regular)
+    static let captionStrong = Font.system(size: 12, weight: .medium)
+    static let sectionTitle = Font.system(size: 18, weight: .semibold)
+    static let pageTitle = Font.system(size: 22, weight: .bold)
+    static let statValue = Font.system(size: 24, weight: .bold)
+    static let metricValue = Font.system(size: 20, weight: .bold)
+}
+
+enum AppLayout {
+    static let pagePadding: CGFloat = 12
+    static let sectionSpacing: CGFloat = 10
+    static let rowSpacing: CGFloat = 8
+    static let cardPadding: CGFloat = 12
+    static let cardCornerRadius: CGFloat = 11
+    static let contentMaxWidth: CGFloat = 1020
+}
+
 struct SectionCard<Content: View>: View {
     let content: Content
 
@@ -9,11 +31,11 @@ struct SectionCard<Content: View>: View {
 
     var body: some View {
         content
-            .padding(16)
+            .padding(AppLayout.cardPadding)
             .background(.background)
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: AppLayout.cardCornerRadius, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: AppLayout.cardCornerRadius, style: .continuous)
                     .stroke(.separator, lineWidth: 0.5)
             )
     }
@@ -26,10 +48,10 @@ struct StatusBadge: View {
 
     var body: some View {
         Label(title, systemImage: systemImage)
-            .font(.caption.weight(.medium))
+            .font(AppTypography.captionStrong)
             .foregroundStyle(tint)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
             .background(tint.opacity(0.12), in: Capsule())
     }
 }
@@ -56,29 +78,37 @@ struct StatItem: View {
     var footnote: String? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                IconBox(systemImage: systemImage, tint: tint, size: 28)
+        HStack(alignment: .center, spacing: 12) {
+            IconBox(systemImage: systemImage, tint: tint, size: 28)
+
+            VStack(alignment: .leading, spacing: 3) {
                 Text(label)
-                    .font(.caption)
+                    .font(AppTypography.captionStrong)
                     .foregroundStyle(.secondary)
+
+                if let footnote {
+                    Text(footnote)
+                        .font(AppTypography.caption)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                }
             }
+
+            Spacer(minLength: 10)
 
             Text(value)
-                .font(.system(.title2, design: .rounded, weight: .bold))
-
-            if let footnote {
-                Text(footnote)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-            }
+                .font(AppTypography.statValue)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+                .multilineTextAlignment(.trailing)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
+        .frame(minHeight: 82)
+        .padding(AppLayout.cardPadding)
         .background(.background)
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .stroke(.separator, lineWidth: 0.5)
         )
     }
@@ -95,21 +125,21 @@ struct ActionRow: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 10) {
+            HStack(spacing: AppLayout.rowSpacing) {
                 IconBox(systemImage: systemImage, tint: isDisabled ? .secondary : tint, size: 34)
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(.body.weight(.medium))
+                        .font(AppTypography.bodyStrong)
                     Text(subtitle)
-                        .font(.caption)
+                        .font(AppTypography.caption)
                         .foregroundStyle(.secondary)
                 }
 
                 Spacer(minLength: 8)
 
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
+                    .font(AppTypography.captionStrong)
                     .foregroundStyle(.quaternary)
             }
             .contentShape(Rectangle())
@@ -128,15 +158,15 @@ struct NoticeRow: View {
     var body: some View {
         Label {
             Text(message)
-                .font(.callout)
+                .font(AppTypography.subtitle)
                 .foregroundStyle(.secondary)
         } icon: {
             Image(systemName: systemImage)
                 .foregroundStyle(tint)
         }
-        .padding(10)
+        .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(tint.opacity(0.06), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(tint.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
@@ -148,18 +178,18 @@ struct TargetFileRow: View {
     var showsOpenIndicator = false
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: AppLayout.rowSpacing) {
             Image(systemName: isDirectory ? "folder.fill" : "doc.fill")
-                .font(.title3)
+                .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(isDirectory ? .orange : .blue)
-                .frame(width: 28)
+                .frame(width: 24)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(name)
-                    .font(.body.weight(.medium))
+                    .font(AppTypography.bodyStrong)
                     .lineLimit(1)
                 Text(path)
-                    .font(.caption.monospaced())
+                    .font(AppTypography.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
                     .textSelection(.enabled)
@@ -174,13 +204,13 @@ struct TargetFileRow: View {
                         Image(systemName: "arrow.up.forward.square")
                     }
                 }
-                .font(.caption2.weight(.medium))
+                .font(AppTypography.captionStrong)
                 .foregroundStyle(showsOpenIndicator ? .orange : .secondary)
                 Text(size)
-                    .font(.callout.weight(.semibold).monospacedDigit())
+                    .font(AppTypography.subtitle.weight(.semibold))
             }
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 5)
     }
 }
 
@@ -190,16 +220,16 @@ struct ResultCountItem: View {
     let tint: Color
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 3) {
             Text("\(count)")
-                .font(.system(.title, design: .rounded, weight: .bold))
+                .font(AppTypography.metricValue)
                 .foregroundStyle(tint)
             Text(label)
-                .font(.caption)
+                .font(AppTypography.caption)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .background(tint.opacity(0.06), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .padding(.vertical, 10)
+        .background(tint.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }

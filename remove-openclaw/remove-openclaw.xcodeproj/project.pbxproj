@@ -24,7 +24,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		55ACD9F02F6B20410044DCFF /* remove-openclaw.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "remove-openclaw.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		55ACD9F02F6B20410044DCFF /* 小龙虾粉碎机.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "小龙虾粉碎机.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		55ACD9FF2F6B20420044DCFF /* remove-openclawTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "remove-openclawTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		55ACDA092F6B20420044DCFF /* remove-openclawUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "remove-openclawUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -85,7 +85,7 @@
 		55ACD9F12F6B20410044DCFF /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				55ACD9F02F6B20410044DCFF /* remove-openclaw.app */,
+				55ACD9F02F6B20410044DCFF /* 小龙虾粉碎机.app */,
 				55ACD9FF2F6B20420044DCFF /* remove-openclawTests.xctest */,
 				55ACDA092F6B20420044DCFF /* remove-openclawUITests.xctest */,
 			);
@@ -113,8 +113,8 @@
 			name = "remove-openclaw";
 			packageProductDependencies = (
 			);
-			productName = "remove-openclaw";
-			productReference = 55ACD9F02F6B20410044DCFF /* remove-openclaw.app */;
+			productName = "小龙虾粉碎机";
+			productReference = 55ACD9F02F6B20410044DCFF /* 小龙虾粉碎机.app */;
 			productType = "com.apple.product-type.application";
 		};
 		55ACD9FE2F6B20420044DCFF /* remove-openclawTests */ = {
@@ -402,6 +402,8 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "小龙虾粉碎机";
+				INFOPLIST_KEY_CFBundleName = "小龙虾粉碎机";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -409,7 +411,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "dev.xwzy.remove-openclaw";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "小龙虾粉碎机";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -433,6 +435,8 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "小龙虾粉碎机";
+				INFOPLIST_KEY_CFBundleName = "小龙虾粉碎机";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -440,7 +444,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "dev.xwzy.remove-openclaw";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "小龙虾粉碎机";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -468,7 +472,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/remove-openclaw.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/remove-openclaw";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/小龙虾粉碎机.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/小龙虾粉碎机";
 			};
 			name = Debug;
 		};
@@ -489,7 +493,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/remove-openclaw.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/remove-openclaw";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/小龙虾粉碎机.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/小龙虾粉碎机";
 			};
 			name = Release;
 		};

@@ -1,6 +1,6 @@
-# remove-openclaw
+# 小龙虾粉碎机
 
-一个只做一件事的 macOS App: 扫描并卸载 OpenClaw（将相关文件移入废纸篓）。
+小龙虾粉碎机是一个只做一件事的 macOS App：扫描并卸载 OpenClaw（将相关文件移入废纸篓）。
 
 ## 功能
 
@@ -33,40 +33,40 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild \
 构建后可直接执行 App 二进制进入 CLI 模式：
 
 ```bash
-APP="$(ls -dt ~/Library/Developer/Xcode/DerivedData/remove-openclaw-*/Build/Products/Debug/remove-openclaw.app | head -n 1)"
-"$APP/Contents/MacOS/remove-openclaw" --cli --help
+APP="$(ls -dt ~/Library/Developer/Xcode/DerivedData/remove-openclaw-*/Build/Products/Debug/小龙虾粉碎机.app | head -n 1)"
+"$APP/Contents/MacOS/小龙虾粉碎机" --cli --help
 ```
 
 常用示例：
 
 ```bash
 # 仅扫描
-"$APP/Contents/MacOS/remove-openclaw" --cli --scan
+"$APP/Contents/MacOS/小龙虾粉碎机" --cli --scan
 
 # 扫描并导出 JSON 清单
-"$APP/Contents/MacOS/remove-openclaw" --cli --export ~/Desktop/openclaw-targets.json
+"$APP/Contents/MacOS/小龙虾粉碎机" --cli --export ~/Desktop/openclaw-targets.json
 
 # 扫描并输出执行结果 JSON（包含统计与失败详情）
-"$APP/Contents/MacOS/remove-openclaw" --cli --scan --json-output ~/Desktop/openclaw-result.json
+"$APP/Contents/MacOS/小龙虾粉碎机" --cli --scan --json-output ~/Desktop/openclaw-result.json
 
 # 从清单文件打印目标列表（支持 .txt/.json）
-"$APP/Contents/MacOS/remove-openclaw" --cli --target-file ~/Desktop/openclaw-targets.json --list
+"$APP/Contents/MacOS/小龙虾粉碎机" --cli --target-file ~/Desktop/openclaw-targets.json --list
 
 # 从清单文件卸载，且要求清单非空（CI 推荐）
-"$APP/Contents/MacOS/remove-openclaw" --cli --target-file ~/Desktop/openclaw-targets.json --strict-target-file --uninstall --confirm
+"$APP/Contents/MacOS/小龙虾粉碎机" --cli --target-file ~/Desktop/openclaw-targets.json --strict-target-file --uninstall --confirm
 
 # 导入清单若有告警（重复/不存在路径）则直接失败
-"$APP/Contents/MacOS/remove-openclaw" --cli --target-file ~/Desktop/openclaw-targets.json --fail-on-warnings --list
+"$APP/Contents/MacOS/小龙虾粉碎机" --cli --target-file ~/Desktop/openclaw-targets.json --fail-on-warnings --list
 
 # 扫描后直接卸载
-"$APP/Contents/MacOS/remove-openclaw" --cli --uninstall --confirm
+"$APP/Contents/MacOS/小龙虾粉碎机" --cli --uninstall --confirm
 
 # 按清单文件执行卸载（推荐先 --dry-run）
-"$APP/Contents/MacOS/remove-openclaw" --cli --target-file ~/Desktop/openclaw-targets.json --uninstall --confirm
+"$APP/Contents/MacOS/小龙虾粉碎机" --cli --target-file ~/Desktop/openclaw-targets.json --uninstall --confirm
 
 # 预演卸载（不实际删除）
-"$APP/Contents/MacOS/remove-openclaw" --cli --uninstall --dry-run
+"$APP/Contents/MacOS/小龙虾粉碎机" --cli --uninstall --dry-run
 
 # 卸载但不自动退出进程
-"$APP/Contents/MacOS/remove-openclaw" --cli --uninstall --confirm --no-terminate-processes
+"$APP/Contents/MacOS/小龙虾粉碎机" --cli --uninstall --confirm --no-terminate-processes
 ```
