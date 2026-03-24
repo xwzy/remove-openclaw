@@ -12,7 +12,7 @@ struct PicoClawVariant: ClawVariant {
     let cliBinaryNames = ["picoclaw", "picoclaw-launcher", "picoclaw-launcher-tui"]
     let stateDirs = [".picoclaw"]
 
-    var extraExplicitPaths: [String] {
+    nonisolated var extraExplicitPaths: [String] {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return [
             "\(home)/Library/Application Support/PicoClaw",

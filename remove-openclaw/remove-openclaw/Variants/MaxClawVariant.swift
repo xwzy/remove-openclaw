@@ -11,7 +11,7 @@ struct MaxClawVariant: ClawVariant {
     let cliBinaryNames = ["maxclaw"]
     let stateDirs = [".maxclaw", ".config/maxclaw"]
 
-    var extraExplicitPaths: [String] {
+    nonisolated var extraExplicitPaths: [String] {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return [
             "\(home)/Library/Application Support/MaxClaw",

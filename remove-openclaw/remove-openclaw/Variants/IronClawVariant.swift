@@ -11,7 +11,7 @@ struct IronClawVariant: ClawVariant {
     let cliBinaryNames = ["ironclaw"]
     let stateDirs = [".ironclaw"]
 
-    var extraExplicitPaths: [String] {
+    nonisolated var extraExplicitPaths: [String] {
         return [
             "/opt/homebrew/Cellar/ironclaw",
             "/opt/homebrew/opt/ironclaw",

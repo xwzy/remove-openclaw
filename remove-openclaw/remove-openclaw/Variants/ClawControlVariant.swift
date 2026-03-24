@@ -10,7 +10,7 @@ struct ClawControlVariant: ClawVariant {
     let cliBinaryNames = ["clawcontrol"]
     let stateDirs = [".config/clawcontrol"]
 
-    var extraExplicitPaths: [String] {
+    nonisolated var extraExplicitPaths: [String] {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return [
             "\(home)/Library/Application Support/ClawControl",

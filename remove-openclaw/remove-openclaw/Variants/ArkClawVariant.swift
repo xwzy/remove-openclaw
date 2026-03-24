@@ -11,7 +11,7 @@ struct ArkClawVariant: ClawVariant {
     let cliBinaryNames = ["arkclaw"]
     let stateDirs = [".arkclaw", ".config/arkclaw"]
 
-    var extraExplicitPaths: [String] {
+    nonisolated var extraExplicitPaths: [String] {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return [
             "\(home)/Library/Application Support/ArkClaw",

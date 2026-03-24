@@ -9,7 +9,7 @@ struct OpenClawMUVariant: ClawVariant {
     let cliBinaryNames = ["openclawmu"]
     let stateDirs = [".openclawmu", ".config/openclawmu"]
 
-    var extraExplicitPaths: [String] {
+    nonisolated var extraExplicitPaths: [String] {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return [
             "\(home)/Library/Application Support/OpenClawMU",

@@ -11,7 +11,7 @@ struct MaClawVariant: ClawVariant {
     let cliBinaryNames = ["MaClaw"]
     let stateDirs = [".maclaw"]
 
-    var extraExplicitPaths: [String] {
+    nonisolated var extraExplicitPaths: [String] {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return [
             "\(home)/Library/Application Support/MaClaw",

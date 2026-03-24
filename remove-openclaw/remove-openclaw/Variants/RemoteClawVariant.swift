@@ -14,7 +14,7 @@ struct RemoteClawVariant: ClawVariant {
     let cliBinaryNames = ["remoteclaw"]
     let stateDirs = [".remoteclaw"]
 
-    var extraExplicitPaths: [String] {
+    nonisolated var extraExplicitPaths: [String] {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         var paths = [
             "\(home)/Library/Application Support/RemoteClaw",

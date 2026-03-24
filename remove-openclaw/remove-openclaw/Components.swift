@@ -145,6 +145,7 @@ struct TargetFileRow: View {
     let path: String
     let size: String
     let isDirectory: Bool
+    var showsOpenIndicator = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -167,9 +168,14 @@ struct TargetFileRow: View {
             Spacer(minLength: 8)
 
             VStack(alignment: .trailing, spacing: 4) {
-                Text(isDirectory ? "目录" : "文件")
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    Text(isDirectory ? "目录" : "文件")
+                    if showsOpenIndicator {
+                        Image(systemName: "arrow.up.forward.square")
+                    }
+                }
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(showsOpenIndicator ? .orange : .secondary)
                 Text(size)
                     .font(.callout.weight(.semibold).monospacedDigit())
             }

@@ -11,7 +11,7 @@ struct AutoClawVariant: ClawVariant {
     let cliBinaryNames = ["autoclaw"]
     let stateDirs = [".autoclaw", ".config/autoclaw"]
 
-    var extraExplicitPaths: [String] {
+    nonisolated var extraExplicitPaths: [String] {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return [
             "\(home)/Library/Application Support/AutoClaw",

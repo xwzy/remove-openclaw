@@ -10,7 +10,7 @@ struct WorkBuddyVariant: ClawVariant {
     let bundleIdentifiers = ["com.tencent.workbuddy"]
     let stateDirs = [".workbuddy", ".config/workbuddy"]
 
-    var extraExplicitPaths: [String] {
+    nonisolated var extraExplicitPaths: [String] {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return [
             "\(home)/Library/Application Support/WorkBuddy",

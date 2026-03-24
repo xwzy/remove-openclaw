@@ -10,29 +10,29 @@ struct ClawVariantScanResult: Identifiable, Sendable {
 }
 
 protocol ClawVariant: Sendable {
-    var id: String { get }
-    var displayName: String { get }
-    var description: String { get }
-    var iconSystemName: String { get }
+    nonisolated var id: String { get }
+    nonisolated var displayName: String { get }
+    nonisolated var description: String { get }
+    nonisolated var iconSystemName: String { get }
 
-    var appNames: [String] { get }
-    var bundleIdentifiers: [String] { get }
-    var launchAgentLabels: [String] { get }
-    var cliBinaryNames: [String] { get }
-    var stateDirs: [String] { get }
-    var extraExplicitPaths: [String] { get }
+    nonisolated var appNames: [String] { get }
+    nonisolated var bundleIdentifiers: [String] { get }
+    nonisolated var launchAgentLabels: [String] { get }
+    nonisolated var cliBinaryNames: [String] { get }
+    nonisolated var stateDirs: [String] { get }
+    nonisolated var extraExplicitPaths: [String] { get }
 }
 
 extension ClawVariant {
-    var iconSystemName: String { "app.badge" }
-    var appNames: [String] { [] }
-    var bundleIdentifiers: [String] { [] }
-    var launchAgentLabels: [String] { [] }
-    var cliBinaryNames: [String] { [] }
-    var stateDirs: [String] { [] }
-    var extraExplicitPaths: [String] { [] }
+    nonisolated var iconSystemName: String { "app.badge" }
+    nonisolated var appNames: [String] { [] }
+    nonisolated var bundleIdentifiers: [String] { [] }
+    nonisolated var launchAgentLabels: [String] { [] }
+    nonisolated var cliBinaryNames: [String] { [] }
+    nonisolated var stateDirs: [String] { [] }
+    nonisolated var extraExplicitPaths: [String] { [] }
 
-    func allExplicitPaths(home: String) -> [String] {
+    nonisolated func allExplicitPaths(home: String) -> [String] {
         var paths: [String] = []
 
         for dir in stateDirs {
@@ -80,7 +80,7 @@ extension ClawVariant {
 }
 
 struct ClawVariantRegistry {
-    static let all: [any ClawVariant] = [
+    nonisolated static let all: [any ClawVariant] = [
         // Original / rebrands
         OpenClawVariant(),
         ClawdBotVariant(),

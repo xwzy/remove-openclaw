@@ -51,19 +51,25 @@ struct ContentView: View {
         List(selection: $selection) {
             Section("总览") {
                 NavigationLink(value: SidebarItem.overview) {
+                    let isSelected = isSidebarItemSelected(.overview)
                     Label {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("全部变体")
                                 .font(.body.weight(.medium))
-                            if viewModel.hasScanned {
+                                .foregroundStyle(sidebarPrimaryTextColor(isSelected: isSelected))
+                            if viewModel.isScanning {
+                                Text("扫描中 \(viewModel.scanProgressLabel)")
+                                    .font(.caption)
+                                    .foregroundStyle(sidebarSecondaryTextColor(isSelected: isSelected, defaultColor: .blue))
+                            } else if viewModel.hasScanned {
                                 Text("检测到 \(viewModel.detectedResults.count)/\(viewModel.variantResults.count) 个")
                                     .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(sidebarSecondaryTextColor(isSelected: isSelected, defaultColor: .secondary))
                             }
                         }
                     } icon: {
                         Image(systemName: "square.grid.2x2")
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(sidebarIconColor(isSelected: isSelected, defaultColor: .blue))
                     }
                 }
             }
@@ -89,22 +95,29 @@ struct ContentView: View {
 
     private func variantRow(_ result: ClawVariantScanResult) -> some View {
         NavigationLink(value: SidebarItem.variant(result.variant.id)) {
+            let isSelected = isSidebarItemSelected(.variant(result.variant.id))
             HStack(spacing: 8) {
                 Image(systemName: result.variant.iconSystemName)
-                    .foregroundStyle(result.isDetected ? .orange : .secondary)
+                    .foregroundStyle(
+                        sidebarIconColor(
+                            isSelected: isSelected,
+                            defaultColor: result.isDetected ? .orange : .secondary
+                        )
+                    )
                     .frame(width: 20)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(result.variant.displayName)
                         .font(.body.weight(.medium))
+                        .foregroundStyle(sidebarPrimaryTextColor(isSelected: isSelected))
                     if result.isDetected {
                         Text("\(result.targets.count) 项 · \(fmt(result.totalSize))")
                             .font(.caption)
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(sidebarSecondaryTextColor(isSelected: isSelected, defaultColor: .orange))
                     } else {
                         Text("未检测到")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(sidebarSecondaryTextColor(isSelected: isSelected, defaultColor: .secondary))
                     }
                 }
 
@@ -112,11 +125,27 @@ struct ContentView: View {
 
                 if result.isDetected && viewModel.selectedVariantIDs.contains(result.variant.id) {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(sidebarIconColor(isSelected: isSelected, defaultColor: .blue))
                         .font(.caption)
                 }
             }
         }
+    }
+
+    private func isSidebarItemSelected(_ item: SidebarItem) -> Bool {
+        selection == item
+    }
+
+    private func sidebarPrimaryTextColor(isSelected: Bool) -> Color {
+        isSelected ? .white : .primary
+    }
+
+    private func sidebarSecondaryTextColor(isSelected: Bool, defaultColor: Color) -> Color {
+        isSelected ? .white : defaultColor
+    }
+
+    private func sidebarIconColor(isSelected: Bool, defaultColor: Color) -> Color {
+        isSelected ? .white : defaultColor
     }
 
     // MARK: - Detail View
@@ -169,10 +198,10 @@ struct ContentView: View {
             )
             StatItem(
                 label: "最近扫描",
-                value: lastScanTimeShort,
+                value: viewModel.isScanning ? viewModel.scanProgressLabel : lastScanTimeShort,
                 systemImage: "clock",
                 tint: .teal,
-                footnote: lastScanDateLong
+                footnote: viewModel.isScanning ? viewModel.scanStatusText : lastScanDateLong
             )
         }
         .padding(16)
@@ -183,11 +212,7 @@ struct ContentView: View {
             overviewToolbar
             Divider()
 
-            if viewModel.isScanning || !viewModel.hasScanned {
-                Spacer()
-                ProgressView("正在扫描所有变体…")
-                Spacer()
-            } else if viewModel.isUninstalling {
+            if viewModel.isUninstalling {
                 Spacer()
                 VStack(spacing: 12) {
                     ProgressView()
@@ -197,10 +222,18 @@ struct ContentView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-            } else if viewModel.detectedResults.isEmpty {
+            } else if !viewModel.hasScanned {
+                initialScanView
+            } else if viewModel.detectedResults.isEmpty && !viewModel.isScanning {
                 emptyState
             } else {
-                overviewList
+                VStack(spacing: 0) {
+                    if viewModel.isScanning {
+                        scanActivityView
+                        Divider()
+                    }
+                    overviewList
+                }
             }
         }
     }
@@ -228,7 +261,7 @@ struct ContentView: View {
                     systemImage: viewModel.allDetectedSelected ? "xmark.circle" : "checkmark.circle"
                 )
             }
-            .disabled(viewModel.detectedResults.isEmpty || viewModel.isUninstalling)
+            .disabled(viewModel.isScanning || viewModel.detectedResults.isEmpty || viewModel.isUninstalling)
 
             Spacer()
 
@@ -237,7 +270,7 @@ struct ContentView: View {
             } label: {
                 Label("导出清单", systemImage: "square.and.arrow.up")
             }
-            .disabled(viewModel.isUninstalling || viewModel.targets.isEmpty)
+            .disabled(viewModel.isScanning || viewModel.isUninstalling || viewModel.targets.isEmpty)
 
             Button(role: .destructive) {
                 showUninstallConfirm = true
@@ -264,6 +297,17 @@ struct ContentView: View {
 
     private var overviewList: some View {
         List {
+            Section("支持扫描的全部变体 (\(supportedVariantDisplayNames.count))") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("当前版本已覆盖官方分支、第三方改名版和国产变体，支持扫描名单一眼看全。")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+
+                    supportedVariantChipGrid
+                }
+                .padding(.vertical, 4)
+            }
+
             ForEach(viewModel.sortedResults.filter({ $0.isDetected }), id: \.id) { result in
                 HStack(spacing: 12) {
                     Button {
@@ -276,6 +320,7 @@ struct ContentView: View {
                             .font(.title3)
                     }
                     .buttonStyle(.plain)
+                    .disabled(viewModel.isScanning)
 
                     Button {
                         selection = .variant(result.variant.id)
@@ -322,6 +367,105 @@ struct ContentView: View {
 
     // MARK: - Variant Detail View
 
+    private var initialScanView: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                scanActivityView
+                supportedVariantsShowcaseCard
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 16)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var scanActivityView: some View {
+        VStack(spacing: 16) {
+            SectionCard {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(alignment: .top, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("正在扫描 Claw 相关残留")
+                                .font(.title3.weight(.semibold))
+                            Text(viewModel.scanStatusText)
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        StatusBadge(
+                            title: viewModel.scanProgressLabel,
+                            systemImage: "waveform.path.ecg",
+                            tint: .blue
+                        )
+                    }
+
+                    if viewModel.scanTotalCount > 0 {
+                        ProgressView(value: Double(viewModel.scanCompletedCount), total: Double(viewModel.scanTotalCount))
+                            .tint(.blue)
+                    } else {
+                        ProgressView()
+                            .tint(.blue)
+                    }
+
+                    HStack(spacing: 12) {
+                        Label("已完成 \(viewModel.scanCompletedCount) 个", systemImage: "checkmark.circle")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Label("已发现 \(viewModel.detectedResults.count) 个变体", systemImage: "app.badge")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Spacer()
+
+                        Text("预计残留 \(fmt(viewModel.totalTargetSize))")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
+            SectionCard {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text("扫描日志")
+                            .font(.headline)
+                        Spacer()
+                        Text("最近 \(min(viewModel.scanLogEntries.count, 10)) 条")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    if viewModel.scanLogEntries.isEmpty {
+                        Text("准备开始扫描…")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        VStack(alignment: .leading, spacing: 8) {
+                            ForEach(Array(viewModel.scanLogEntries.suffix(10))) { entry in
+                                HStack(alignment: .top, spacing: 10) {
+                                    Text(entry.timestamp, format: .dateTime.hour().minute().second())
+                                        .font(.caption.monospacedDigit())
+                                        .foregroundStyle(.tertiary)
+                                        .frame(width: 72, alignment: .leading)
+
+                                    Text(entry.message)
+                                        .font(.callout)
+                                        .foregroundStyle(.primary)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .padding(16)
+    }
+
     private func variantDetailView(_ result: ClawVariantScanResult) -> some View {
         VStack(spacing: 0) {
             variantDetailHeader(result)
@@ -343,12 +487,31 @@ struct ContentView: View {
                 List(result.targets) { target in
                     let url = URL(fileURLWithPath: target.path)
                     let name = url.lastPathComponent.isEmpty ? target.path : url.lastPathComponent
-                    TargetFileRow(
-                        name: name,
-                        path: target.path,
-                        size: fmt(target.size),
-                        isDirectory: target.isDirectory
-                    )
+                    Group {
+                        if target.isDirectory {
+                            Button {
+                                openTargetInFinder(target)
+                            } label: {
+                                TargetFileRow(
+                                    name: name,
+                                    path: target.path,
+                                    size: fmt(target.size),
+                                    isDirectory: true,
+                                    showsOpenIndicator: true
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .contentShape(Rectangle())
+                            .help("在 Finder 中打开目录")
+                        } else {
+                            TargetFileRow(
+                                name: name,
+                                path: target.path,
+                                size: fmt(target.size),
+                                isDirectory: false
+                            )
+                        }
+                    }
                 }
                 .listStyle(.inset(alternatesRowBackgrounds: true))
             }
@@ -390,6 +553,7 @@ struct ContentView: View {
                     )
                 }
                 .buttonStyle(.bordered)
+                .disabled(viewModel.isScanning)
             } else {
                 StatusBadge(title: "无残留", systemImage: "checkmark.circle", tint: .green)
             }
@@ -411,7 +575,7 @@ struct ContentView: View {
                 }
             }
             .toggleStyle(.switch)
-            .disabled(viewModel.isUninstalling)
+            .disabled(viewModel.isScanning || viewModel.isUninstalling)
         }
     }
 
@@ -448,24 +612,82 @@ struct ContentView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 40))
-                .foregroundStyle(.green)
+        ScrollView {
+            VStack(spacing: 16) {
+                SectionCard {
+                    VStack(spacing: 12) {
+                        Image(systemName: "checkmark.seal.fill")
+                            .font(.system(size: 40))
+                            .foregroundStyle(.green)
 
-            Text("没有发现残留")
-                .font(.title2.weight(.semibold))
+                        Text("没有发现残留")
+                            .font(.title2.weight(.semibold))
 
-            Text("扫描未发现任何 Claw 变体相关文件，当前环境已经干净。")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 360)
+                        Text("扫描未发现任何 Claw 变体相关文件，当前环境已经干净。")
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: 360)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+
+                supportedVariantsShowcaseCard
+            }
+            .padding(16)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    private var supportedVariantsShowcaseCard: some View {
+        SectionCard {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("当前支持扫描的全部变体")
+                            .font(.title3.weight(.semibold))
+                        Text("当前版本共覆盖 \(supportedVariantDisplayNames.count) 个变体，包含官方分支、第三方改名版和国产变体。")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    StatusBadge(title: "\(supportedVariantDisplayNames.count) 个", systemImage: "sparkles", tint: .blue)
+                }
+
+                supportedVariantChipGrid
+            }
+        }
+    }
+
+    private var supportedVariantChipGrid: some View {
+        LazyVGrid(columns: supportedVariantGridColumns, alignment: .leading, spacing: 8) {
+            ForEach(supportedVariantDisplayNames, id: \.self) { name in
+                Text(name)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(.blue.opacity(0.08), in: Capsule())
+                    .overlay(
+                        Capsule()
+                            .stroke(.blue.opacity(0.14), lineWidth: 0.5)
+                    )
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
     // MARK: - Computed Properties
+
+    private var supportedVariantGridColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: 96, maximum: 180), alignment: .leading)]
+    }
+
+    private var supportedVariantDisplayNames: [String] {
+        ClawVariantRegistry.all.map(\.displayName).sorted()
+    }
 
     private var lastScanTimeShort: String {
         guard let d = viewModel.lastScannedAt else { return "扫描中…" }
@@ -490,6 +712,15 @@ struct ContentView: View {
 
     private func fmt(_ size: Int64) -> String {
         byteFormatter.string(fromByteCount: size)
+    }
+
+    private func openTargetInFinder(_ target: OpenClawCleanupTarget) {
+        let url = URL(fileURLWithPath: target.path)
+        if target.isDirectory {
+            NSWorkspace.shared.open(url)
+        } else {
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+        }
     }
 
     // MARK: - Export

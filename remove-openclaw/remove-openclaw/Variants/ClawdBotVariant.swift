@@ -16,7 +16,7 @@ struct ClawdBotVariant: ClawVariant {
         ".clawdbot", ".config/clawdbot", ".cache/clawdbot",
     ]
 
-    var extraExplicitPaths: [String] {
+    nonisolated var extraExplicitPaths: [String] {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return [
             "\(home)/clawdbot",

@@ -11,7 +11,7 @@ struct ZeroClawVariant: ClawVariant {
     let cliBinaryNames = ["zeroclaw"]
     let stateDirs = [".zeroclaw"]
 
-    var extraExplicitPaths: [String] {
+    nonisolated var extraExplicitPaths: [String] {
         return [
             "/opt/homebrew/Cellar/zeroclaw",
             "/opt/homebrew/opt/zeroclaw",

@@ -29,7 +29,14 @@ struct OpenClawCleanupResult: Sendable {
     )
 }
 
-struct OpenClawUninstallService {
+enum OpenClawScanEvent: Sendable {
+    case started(total: Int)
+    case variantStarted(index: Int, total: Int, name: String)
+    case variantFinished(index: Int, total: Int, result: ClawVariantScanResult)
+    case completed(results: [ClawVariantScanResult])
+}
+
+struct OpenClawUninstallService: Sendable {
     private struct AppResidueCleanupRequest: Sendable, Equatable {
         let query: String
         let displayName: String
@@ -68,7 +75,7 @@ struct OpenClawUninstallService {
 
     // MARK: - Per-Variant Scanning
 
-    func scanForVariant(_ variant: any ClawVariant) -> [OpenClawCleanupTarget] {
+    nonisolated func scanForVariant(_ variant: any ClawVariant) -> [OpenClawCleanupTarget] {
         let identities = makeIdentitiesForVariant(variant)
         var allTargetPaths: Set<String> = []
 
@@ -108,15 +115,34 @@ struct OpenClawUninstallService {
         }
     }
 
-    func scanAllVariants() -> [ClawVariantScanResult] {
-        ClawVariantRegistry.all.map { variant in
-            ClawVariantScanResult(variant: variant, targets: scanForVariant(variant))
+    nonisolated func scanAllVariants(reportProgress: @escaping @Sendable (OpenClawScanEvent) -> Void) -> [ClawVariantScanResult] {
+        let variants = ClawVariantRegistry.all
+        reportProgress(.started(total: variants.count))
+
+        var results: [ClawVariantScanResult] = []
+        results.reserveCapacity(variants.count)
+
+        for (offset, variant) in variants.enumerated() {
+            let index = offset + 1
+            reportProgress(.variantStarted(index: index, total: variants.count, name: variant.displayName))
+
+            let result = ClawVariantScanResult(variant: variant, targets: scanForVariant(variant))
+            results.append(result)
+
+            reportProgress(.variantFinished(index: index, total: variants.count, result: result))
         }
+
+        reportProgress(.completed(results: results))
+        return results
+    }
+
+    nonisolated func scanAllVariants() -> [ClawVariantScanResult] {
+        scanAllVariants { _ in }
     }
 
     // MARK: - Aggregated Scanning (for CLI backward compat)
 
-    func scanOpenClawTargets() -> [OpenClawCleanupTarget] {
+    nonisolated func scanOpenClawTargets() -> [OpenClawCleanupTarget] {
         let results = scanAllVariants()
         var allPaths: Set<String> = []
         for r in results {
@@ -140,7 +166,7 @@ struct OpenClawUninstallService {
 
     // MARK: - Uninstall
 
-    func uninstallOpenClawCompletely(
+    nonisolated func uninstallOpenClawCompletely(
         preferredTargets: [OpenClawCleanupTarget]? = nil,
         terminateRunningProcesses: Bool = true
     ) async -> OpenClawCleanupResult {
@@ -176,7 +202,7 @@ struct OpenClawUninstallService {
         )
     }
 
-    func uninstallSelectedVariants(
+    nonisolated func uninstallSelectedVariants(
         _ variantResults: [ClawVariantScanResult],
         terminateRunningProcesses: Bool = true
     ) async -> OpenClawCleanupResult {
@@ -221,7 +247,7 @@ struct OpenClawUninstallService {
         let failedPaths: [String]
     }
 
-    private func recycleTargets(_ targets: [OpenClawCleanupTarget]) async -> FileCleanupResult {
+    private nonisolated func recycleTargets(_ targets: [OpenClawCleanupTarget]) async -> FileCleanupResult {
         let uniquePaths = collapseDescendantCleanupPaths(targets.map(\.path))
         guard !uniquePaths.isEmpty else {
             return FileCleanupResult(movedToTrashCount: 0, failedCount: 0, movedToTrashSize: 0, failedPaths: [])
@@ -259,7 +285,7 @@ struct OpenClawUninstallService {
 
     // MARK: - Identity Construction from ClawVariant
 
-    private func makeIdentitiesForVariant(_ variant: any ClawVariant) -> [AppResidueCleanupIdentity] {
+    private nonisolated func makeIdentitiesForVariant(_ variant: any ClawVariant) -> [AppResidueCleanupIdentity] {
         var identities: [AppResidueCleanupIdentity] = []
         let names = variant.appNames + [variant.displayName]
         for name in names {
@@ -277,13 +303,13 @@ struct OpenClawUninstallService {
 
     // MARK: - LaunchAgent Management
 
-    private func unloadAllClawLaunchAgents() {
+    private nonisolated func unloadAllClawLaunchAgents() {
         let allLabels = ClawVariantRegistry.all.flatMap { $0.launchAgentLabels }
         unloadSpecificLaunchAgents(labels: allLabels)
         dynamicUnloadClawLaunchAgents()
     }
 
-    private func unloadSpecificLaunchAgents(labels: [String]) {
+    private nonisolated func unloadSpecificLaunchAgents(labels: [String]) {
         let uid = getuid()
         for label in labels {
             let process = Process()
@@ -296,7 +322,7 @@ struct OpenClawUninstallService {
         }
     }
 
-    private static let clawPlistKeywords: [String] = [
+    private nonisolated static let clawPlistKeywords: [String] = [
         "openclaw", "clawdbot", "moltbot", "moldbot", "molt.",
         "oneclaw", "remoteclaw", "coderclaw", "zeroclaw", "ironclaw",
         "picoclaw", "miniclaw", "nemoclaw", "nanoclaw", "bunclaw",
@@ -305,7 +331,7 @@ struct OpenClawUninstallService {
         "arkclaw", "duclaw", "maxclaw", "autoclaw", "hiclaw", "miclaw",
     ]
 
-    private func dynamicUnloadClawLaunchAgents() {
+    private nonisolated func dynamicUnloadClawLaunchAgents() {
         let uid = getuid()
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         let launchAgentsDir = "\(home)/Library/LaunchAgents"
@@ -329,7 +355,7 @@ struct OpenClawUninstallService {
 
     // MARK: - Request / Identity Construction
 
-    private func makeAppResidueCleanupRequest(from rawInput: String) -> AppResidueCleanupRequest? {
+    private nonisolated func makeAppResidueCleanupRequest(from rawInput: String) -> AppResidueCleanupRequest? {
         let trimmedInput = rawInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedInput.isEmpty else { return nil }
 
@@ -349,7 +375,7 @@ struct OpenClawUninstallService {
         return AppResidueCleanupRequest(query: normalizedName, displayName: normalizedName)
     }
 
-    private func makeAppResidueCleanupIdentity(
+    private nonisolated func makeAppResidueCleanupIdentity(
         from request: AppResidueCleanupRequest
     ) -> AppResidueCleanupIdentity? {
         var appBundleNames: Set<String> = []
@@ -440,7 +466,7 @@ struct OpenClawUninstallService {
         )
     }
 
-    private func appendAppResidueIdentityVariants(
+    private nonisolated func appendAppResidueIdentityVariants(
         from rawValue: String,
         directoryNames: inout Set<String>,
         binaryNames: inout Set<String>,
@@ -474,7 +500,7 @@ struct OpenClawUninstallService {
 
     // MARK: - Installed App Matching
 
-    private func matchedInstalledApps(for request: AppResidueCleanupRequest) -> [InstalledAppDescriptor] {
+    private nonisolated func matchedInstalledApps(for request: AppResidueCleanupRequest) -> [InstalledAppDescriptor] {
         var matches: [InstalledAppDescriptor] = []
         var seenPaths: Set<String> = []
         let fileManager = FileManager.default
@@ -523,7 +549,7 @@ struct OpenClawUninstallService {
         return matches
     }
 
-    private func installedAppDescriptor(from appURL: URL) -> InstalledAppDescriptor? {
+    private nonisolated func installedAppDescriptor(from appURL: URL) -> InstalledAppDescriptor? {
         let appName = appURL.deletingPathExtension().lastPathComponent
         let bundleName = appURL.lastPathComponent
         guard !appName.isEmpty else { return nil }
@@ -539,7 +565,7 @@ struct OpenClawUninstallService {
 
     // MARK: - Path Discovery
 
-    private func discoverAppResidueCleanupPaths(for identity: AppResidueCleanupIdentity) -> [String] {
+    private nonisolated func discoverAppResidueCleanupPaths(for identity: AppResidueCleanupIdentity) -> [String] {
         let fileManager = FileManager.default
         let home = fileManager.homeDirectoryForCurrentUser.path
         var candidates: Set<String> = []
@@ -580,7 +606,7 @@ struct OpenClawUninstallService {
         return collapseDescendantCleanupPaths(Array(filtered))
     }
 
-    private func appendAppResidueCandidate(
+    private nonisolated func appendAppResidueCandidate(
         _ rawPath: String, identity: AppResidueCleanupIdentity, candidates: inout Set<String>
     ) {
         let normalizedPath = canonicalPath(rawPath)
@@ -588,7 +614,7 @@ struct OpenClawUninstallService {
         candidates.insert(normalizedPath)
     }
 
-    private func appResidueSearchableRoots(homePath: String) -> [String] {
+    private nonisolated func appResidueSearchableRoots(homePath: String) -> [String] {
         [
             "/Applications",
             "\(homePath)/Applications",
@@ -611,7 +637,7 @@ struct OpenClawUninstallService {
         ]
     }
 
-    private func shouldInspectAppResidueGrandchildren(
+    private nonisolated func shouldInspectAppResidueGrandchildren(
         root: String, childURL: URL, fileManager: FileManager
     ) -> Bool {
         let normalizedRoot = canonicalPath(root).lowercased()
@@ -640,7 +666,7 @@ struct OpenClawUninstallService {
 
     // MARK: - Path Validation
 
-    private func isAppResiduePathAllowedForCleanup(
+    private nonisolated func isAppResiduePathAllowedForCleanup(
         _ path: String, identity: AppResidueCleanupIdentity
     ) -> Bool {
         let normalizedPath = canonicalPath(path)
@@ -654,7 +680,7 @@ struct OpenClawUninstallService {
         return false
     }
 
-    private func appResiduePathIdentityMatches(
+    private nonisolated func appResiduePathIdentityMatches(
         _ path: String, withinRoot root: String, homePath: String,
         identity: AppResidueCleanupIdentity
     ) -> Bool {
@@ -746,7 +772,7 @@ struct OpenClawUninstallService {
         return false
     }
 
-    private func appResidueComponentMatchesIdentity(
+    private nonisolated func appResidueComponentMatchesIdentity(
         _ rawComponent: String, identity: AppResidueCleanupIdentity
     ) -> Bool {
         let lowerComponent = rawComponent.lowercased()
@@ -760,7 +786,7 @@ struct OpenClawUninstallService {
         return identity.normalizedNameTokens.contains(normalized)
     }
 
-    private func explicitAppResiduePaths(
+    private nonisolated func explicitAppResiduePaths(
         for identity: AppResidueCleanupIdentity, homePath: String
     ) -> [String] {
         var paths: Set<String> = []
@@ -811,7 +837,7 @@ struct OpenClawUninstallService {
         return Array(paths)
     }
 
-    private func safeCleanupPathComponent(_ rawValue: String) -> String? {
+    private nonisolated func safeCleanupPathComponent(_ rawValue: String) -> String? {
         let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
         guard !trimmed.contains("/") else { return nil }
@@ -819,7 +845,7 @@ struct OpenClawUninstallService {
         return trimmed
     }
 
-    private func prepareAppResidueCleanupTarget(
+    private nonisolated func prepareAppResidueCleanupTarget(
         for path: String, identity: AppResidueCleanupIdentity
     ) -> AppResidueCleanupTarget? {
         let fileManager = FileManager.default
@@ -842,7 +868,7 @@ struct OpenClawUninstallService {
         )
     }
 
-    private func isDangerousCleanupPath(_ path: String, homePath: String) -> Bool {
+    private nonisolated func isDangerousCleanupPath(_ path: String, homePath: String) -> Bool {
         let canonical = canonicalPath(path)
         let protectedRoots = Set(appResidueSearchableRoots(homePath: homePath).map(canonicalPath))
         if protectedRoots.contains(canonical) { return true }
@@ -876,7 +902,7 @@ struct OpenClawUninstallService {
 
     // MARK: - Size Estimation
 
-    private func estimateCleanupTargetSize(at url: URL, isDirectory: Bool) -> Int64 {
+    private nonisolated func estimateCleanupTargetSize(at url: URL, isDirectory: Bool) -> Int64 {
         if !isDirectory {
             let resources = try? url.resourceValues(forKeys: [.totalFileAllocatedSizeKey, .fileSizeKey])
             return Int64(resources?.totalFileAllocatedSize ?? resources?.fileSize ?? 0)
@@ -904,7 +930,7 @@ struct OpenClawUninstallService {
 
     // MARK: - Recycle
 
-    private func recycleItem(at url: URL) async -> Bool {
+    private nonisolated func recycleItem(at url: URL) async -> Bool {
         let workspaceSucceeded = await withCheckedContinuation { continuation in
             NSWorkspace.shared.recycle([url]) { _, error in
                 continuation.resume(returning: error == nil)
@@ -923,7 +949,7 @@ struct OpenClawUninstallService {
 
     // MARK: - Process Termination
 
-    private func terminateRunningOpenClawProcesses(
+    private nonisolated func terminateRunningOpenClawProcesses(
         identity: AppResidueCleanupIdentity
     ) -> ProcessTerminationSummary {
         let runningApps = NSWorkspace.shared.runningApplications
@@ -966,7 +992,7 @@ struct OpenClawUninstallService {
         )
     }
 
-    private func isRunningAppMatched(
+    private nonisolated func isRunningAppMatched(
         _ app: NSRunningApplication, identity: AppResidueCleanupIdentity
     ) -> Bool {
         if let bundleID = app.bundleIdentifier?.lowercased(),
@@ -989,14 +1015,14 @@ struct OpenClawUninstallService {
         return false
     }
 
-    private func processDisplayName(for app: NSRunningApplication) -> String {
+    private nonisolated func processDisplayName(for app: NSRunningApplication) -> String {
         if let name = app.localizedName, !name.isEmpty { return name }
         if let bundleID = app.bundleIdentifier, !bundleID.isEmpty { return bundleID }
         if let path = app.bundleURL?.path { return path }
         return "pid:\(app.processIdentifier)"
     }
 
-    private func waitForTermination(of app: NSRunningApplication, timeout: TimeInterval) -> Bool {
+    private nonisolated func waitForTermination(of app: NSRunningApplication, timeout: TimeInterval) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
         while !app.isTerminated && Date() < deadline {
             RunLoop.current.run(mode: .default, before: Date().addingTimeInterval(0.05))
@@ -1006,7 +1032,7 @@ struct OpenClawUninstallService {
 
     // MARK: - Utility
 
-    private func normalizedAppDisplayName(from rawValue: String) -> String {
+    private nonisolated func normalizedAppDisplayName(from rawValue: String) -> String {
         var value = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
         if value.contains("/") {
             value = URL(fileURLWithPath: value).deletingPathExtension().lastPathComponent
@@ -1018,7 +1044,7 @@ struct OpenClawUninstallService {
         return value.replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
     }
 
-    private func normalizedIdentityToken(_ rawValue: String) -> String {
+    private nonisolated func normalizedIdentityToken(_ rawValue: String) -> String {
         let lowered = rawValue.lowercased()
         let scalars = lowered.unicodeScalars.filter {
             CharacterSet.alphanumerics.contains($0)
@@ -1026,7 +1052,7 @@ struct OpenClawUninstallService {
         return String(String.UnicodeScalarView(scalars))
     }
 
-    private func looksLikeBundleIdentifier(_ rawValue: String) -> Bool {
+    private nonisolated func looksLikeBundleIdentifier(_ rawValue: String) -> Bool {
         let value = rawValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard value.count >= 5 else { return false }
         guard value.contains(".") else { return false }
@@ -1039,18 +1065,18 @@ struct OpenClawUninstallService {
         }
     }
 
-    private func canonicalPath(_ path: String) -> String {
+    private nonisolated func canonicalPath(_ path: String) -> String {
         URL(fileURLWithPath: path).standardizedFileURL.resolvingSymlinksInPath().path
     }
 
-    private func isSamePathOrDescendant(_ path: String, of parentPath: String) -> Bool {
+    private nonisolated func isSamePathOrDescendant(_ path: String, of parentPath: String) -> Bool {
         let normalizedPath = URL(fileURLWithPath: path).standardizedFileURL.pathComponents
         let normalizedParent = URL(fileURLWithPath: parentPath).standardizedFileURL.pathComponents
         guard normalizedParent.count <= normalizedPath.count else { return false }
         return zip(normalizedParent, normalizedPath).allSatisfy(==)
     }
 
-    private func collapseDescendantCleanupPaths(_ paths: [String]) -> [String] {
+    private nonisolated func collapseDescendantCleanupPaths(_ paths: [String]) -> [String] {
         let sorted = Array(Set(paths.map(canonicalPath))).sorted {
             if $0.count == $1.count {
                 return $0.localizedStandardCompare($1) == .orderedAscending

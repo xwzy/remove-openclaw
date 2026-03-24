@@ -11,7 +11,7 @@ struct DuClawVariant: ClawVariant {
     let cliBinaryNames = ["duclaw"]
     let stateDirs = [".duclaw", ".config/duclaw"]
 
-    var extraExplicitPaths: [String] {
+    nonisolated var extraExplicitPaths: [String] {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return [
             "\(home)/Library/Application Support/DuClaw",

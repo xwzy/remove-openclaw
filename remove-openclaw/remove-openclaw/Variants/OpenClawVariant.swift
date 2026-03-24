@@ -19,7 +19,7 @@ struct OpenClawVariant: ClawVariant {
     let cliBinaryNames = ["openclaw", "openclaw-cn", "clawhub", "clawdhub"]
     let stateDirs = [".openclaw", ".config/openclaw", ".cache/openclaw"]
 
-    var extraExplicitPaths: [String] {
+    nonisolated var extraExplicitPaths: [String] {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         var paths: [String] = [
             "\(home)/Library/Application Support/OpenClaw",
@@ -72,7 +72,7 @@ struct OpenClawVariant: ClawVariant {
         return paths
     }
 
-    private func resolveNpmGlobalPrefix() -> String? {
+    private nonisolated func resolveNpmGlobalPrefix() -> String? {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         process.arguments = ["npm", "prefix", "-g"]

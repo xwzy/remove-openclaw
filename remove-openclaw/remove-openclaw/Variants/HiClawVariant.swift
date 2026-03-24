@@ -10,7 +10,7 @@ struct HiClawVariant: ClawVariant {
     let cliBinaryNames = ["hiclaw"]
     let stateDirs = [".hiclaw", ".config/hiclaw"]
 
-    var extraExplicitPaths: [String] {
+    nonisolated var extraExplicitPaths: [String] {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return [
             "\(home)/Library/Application Support/HiClaw",

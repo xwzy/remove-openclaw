@@ -20,7 +20,7 @@ struct MoltbotVariant: ClawVariant {
         ".moltbot", ".moldbot", ".config/moltbot", ".cache/moltbot",
     ]
 
-    var extraExplicitPaths: [String] {
+    nonisolated var extraExplicitPaths: [String] {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return [
             "\(home)/Library/Application Support/Moltbot",

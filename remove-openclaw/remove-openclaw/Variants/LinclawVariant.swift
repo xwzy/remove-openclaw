@@ -8,7 +8,7 @@ struct LinclawVariant: ClawVariant {
 
     let stateDirs = [".openclaw/linclaw", ".config/linclaw"]
 
-    var extraExplicitPaths: [String] {
+    nonisolated var extraExplicitPaths: [String] {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return [
             "\(home)/Library/Application Support/Linclaw",

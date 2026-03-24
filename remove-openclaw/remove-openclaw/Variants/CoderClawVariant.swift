@@ -14,7 +14,7 @@ struct CoderClawVariant: ClawVariant {
     let cliBinaryNames = ["coderclaw"]
     let stateDirs = [".coderclaw"]
 
-    var extraExplicitPaths: [String] {
+    nonisolated var extraExplicitPaths: [String] {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         return [
             "\(home)/Library/Application Support/CoderClaw",
